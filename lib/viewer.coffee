@@ -31,8 +31,8 @@ class Viewer extends Disposable
         @client.ws = undefined
 
   refresh: ->
-    newTitle = path.basename("""#{@latex.mainFile.substr(
-      0, @latex.mainFile.lastIndexOf('.'))}.pdf""")
+    newTitle = path.join(path.dirname(@latex.mainFile), "build", "main.pdf")
+    console.log "refresh - newTitle", newTitle
 
     if @tabView? and @tabView.title isnt newTitle and
         atom.workspace.paneForItem(@tabView)?
@@ -74,12 +74,22 @@ class Viewer extends Disposable
       if !atom.config.get('atom-latex.focus_viewer')
         @latex.viewer.focusMain()
 
+  getPDFPath: ->
+    if @latex.manager.config? and @latex.manager.config.previewfile?
+      pdfPath = path.join(path.dirname(@latex.mainFile), @latex.manager.config.previewfile)
+    else
+      pdfPath = """#{@latex.mainFile.substr(0, @latex.mainFile.lastIndexOf('.'))}.pdf"""
+    console.log "getPDFPath: pdfPath", pdfPath
+    return pdfPath
+
   openViewerNewWindow: ->
     if !@latex.manager.findMain()
       return
 
     pdfPath = """#{@latex.mainFile.substr(
       0, @latex.mainFile.lastIndexOf('.'))}.pdf"""
+    pdfPath = path.join(path.dirname(@latex.mainFile), "build", "main.pdf")
+    console.log "openViewerNewWindow - pdfPath:", pdfPath
     if !fs.existsSync pdfPath
       return
 
@@ -104,19 +114,19 @@ class Viewer extends Disposable
     if !@latex.manager.findMain()
       return
 
-    pdfPath = """#{@latex.mainFile.substr(
-      0, @latex.mainFile.lastIndexOf('.'))}.pdf"""
+    pdfPath = @getPDFPath()
     if !fs.existsSync pdfPath
       return
 
     if !@getUrl()
       return
+    console.log "openViewerNewWindow - @url:", @url
 
     @self = atom.workspace.getActivePane()
     if @tabView? and atom.workspace.paneForItem(@tabView)?
       atom.workspace.paneForItem(@tabView).activateItem(@tabView)
     else
-      @tabView = new PDFView(@url,path.basename(pdfPath))
+      @tabView = new PDFView(@url,pdfPath)
       atom.workspace.getActivePane().splitRight().addItem(@tabView)
 
   getUrl: ->

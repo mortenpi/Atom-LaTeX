@@ -28,7 +28,6 @@ class Manager extends Disposable
     if @lastCfgTime? and Date.now() - @lastCfgTime < 200 or\
        !atom.workspace.getActiveTextEditor()?
       return @config?
-    @lastCfgTime = Date.now()
     rootDir = @rootDir()
     for file in fs.readdirSync rootDir
       if file is '.latexcfg'
@@ -38,6 +37,7 @@ class Manager extends Disposable
           @config = JSON.parse fileContent
           if @config.root?
             @config.root = path.resolve rootDir, @config.root
+          @lastCfgTime = Date.now() # only populate @lastCfgTime when successful
           return true
         catch err
     return false
@@ -132,9 +132,10 @@ class Manager extends Disposable
   findPDF: ->
     if !@findMain()
       return false
-    return path.join(
-      path.dirname(@latex.mainFile),
-      path.basename(@latex.mainFile, '.tex') + '.pdf')
+    if @config? and @config.previewfile?
+      return path.join(path.dirname(@latex.mainFile), @config.previewfile)
+    else
+      return path.join(path.dirname(@latex.mainFile), path.basename(@latex.mainFile, '.tex') + '.pdf')
 
   prevWatcherClosed: (watcher, watchPath) ->
     watchedPaths = watcher.getWatched()
